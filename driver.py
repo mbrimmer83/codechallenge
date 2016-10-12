@@ -50,7 +50,7 @@ finally:
                 lastLink = str(theLink)
                 return lastLink
 
-        # Class method to return the name count of leader at given location
+        # Class method to return the name count of leader at given location excluding full name entries
         def getBetterCloudNameCount(self, name):
             name = name.split()
             firstname = name[0]
@@ -59,12 +59,27 @@ finally:
             for child in self.parent.find_elements_by_tag_name("p"):
                 string = child.text.upper()
                 string_array = string.split()
-                firstname_count = string_array.count(firstname)
-                lastname_count = string_array.count(lastname)
-                leader_child_name_count = firstname_count - lastname_count
-                leader_name_count += leader_child_name_count
+                # This was my first attempt at solving the name count problem and it was working until I ran it using Russell Sachs location where they referrence him by last name instead of his first.
+                # firstname_count = string_array.count(firstname)
+                # lastname_count = string_array.count(lastname)
+                # leader_child_name_count = firstname_count - lastname_count
+                # leader_name_count += leader_child_name_count
+
+                # Second solution to name count problem and overall it is a more thorough and eloquent solution
+                for index, item in enumerate(string_array):
+                    next = index + 1
+                    if item == firstname and string_array[next] != lastname:
+                        leader_name_count += 1
+
             return leader_name_count
 
+        def getLinkedInInformation(self, url):
+            for child in self.parent.find_elements_by_tag_name("a"):
+                if child.get_attribute("href") == url:
+                    link = child
+            # I struggled to get the link to click and the problem appeared to be with the image covering the link. Not 100%, but this was a workable solution to the problem.
+            driver.execute_script("arguments[0].click();", link)
+            for element in driver.find_elements_by_css_selector("span.locaity"):
         # Class method that calls the other methods and return a dictionary for leader at given location
         def buildLeaderDictionary(self):
             name = self.getBetterCloudName()
@@ -72,6 +87,7 @@ finally:
             image = self.getBetterCloudLeaderImage()
             Linkedin = self.getBetterCloudLinkedIn()
             count = self.getBetterCloudNameCount(name)
+            linked_in_info = self.getLinkedInInformation(Linkedin)
             split_name = name.split()
             firstname = split_name[0]
             lastname = split_name[1]
