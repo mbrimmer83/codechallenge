@@ -1,130 +1,95 @@
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
-from selenium.webdriver.support import expected_conditions as EC # available since 2.26.0
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-# Create a new instance of the Firefox driver
+# Create a new instance of the Firefox driver. I spent a good deal of time trouble shooting Firefox driver problems and was finally able to make it work by using an older version of FireFox(46.0.1).
 driver = webdriver.Firefox()
 
 # Navigate to BetterCloud
-driver.get("https://www.bettercloud.com/about-us ")
-print driver.title
+driver.get("https://www.bettercloud.com/about-us")
 
 # Navigate to LeaderShip page
 leadershp_link = driver.find_element_by_link_text("LEADERSHIP")
 leadershp_link.click()
-# Leaders list of dictionaries
-leaders = []
 
-# Get leaders image url
-def getBetterCloudLeaderImage():
-    parent = driver.find_elements_by_css_selector("#leaders > div:nth-child(1) > div:nth-child(2)")[0]
-    index = 0
-    image = parent.find_elements_by_tag_name('img')
-    for child in image:
-        the_image = child.get_attribute("src")
-        last_image = the_image
-        if "icon" not in last_image:
-            leaders[index]['image_url'] = last_image
-            index += 1
+# Make sure page has loaded after leadership link is clicked. I spent a good amount with this. Many of the articles I read told me this was unnecessary with newer version of selenium. However, when I would select the leadership tab, the data would sometimes not be there. My assumption was that my python was running before javascript had completely updated the DOM since I was navigating after the page had loaded. This seems to have fixed the problem and my functions run as expected.
+try:
+    element = WebDriverWait(driver, 10).until(
+        EC.text_to_be_present_in_element((By.XPATH, "//*[@id='leaders']/div/div[2]/div[1]/h2"), 'DAVID POLITIS'))
+finally:
 
-# Get leaders names and linkedin url
-def getBetterCloudList():
-    for parent in driver.find_elements_by_css_selector("h2"):
-        for child in parent.find_elements_by_tag_name("a"):
-            theLink = child.get_attribute("href")
-            lastLink = str(theLink)
-            print lastLink
-            if lastLink != None and parent.text != '':
-                name_string = parent.text.split(" ")
-                new_dict = {
-                    'firstname': name_string[0],
-                    'lastname': name_string[1],
-                    'linkedin': lastLink
-                }
-                leaders.append(new_dict)
-    if len(leaders) >= 8:
-        removed = leaders.pop()
+# I initially just built functions to get each piece of data by leader location alone. I only wanted to use one main selector and then have that code be reran for each leader given only there location. This seemed logical in that each leaders html was structured the same with each having there own div. I then refactored into a Leader class in order to reduce the amount of duplicated code.
+    class Leader(object):
+        def __init__(self, location):
+            self.location = location
+            self.parent = driver.find_element_by_xpath(self.location)
 
-# def getBetterCloudList():
-#     for parent in driver.find_elements_by_css_selector("#leaders > div > div:nth-child(2)"):
-#         for child in parent.find_elements_by_css_selector("h2.style-title"):
-#             if parent.text != '':
-#                 name_string = child.text.split(" ")
-#                 new_dict = {
-#                     'firstname': name_string[0],
-#                     'lastname': name_string[1]
-#                 }
-#                 leaders.append(new_dict)
-#     print leaders
+        # Class method to return the name of the leader at given location
+        def getBetterCloudName(self):
+            for child in self.parent.find_elements_by_xpath("./h2"):
+                name_string = child.text
+                return name_string
 
+        # Class method to return the title of the leader at given location
+        def getBetterCloudTitle(self):
+            for child in self.parent.find_elements_by_xpath("./h5"):
+                return child.text
 
-def getBetterCloudNames():
-    for parent in driver.find_elements_by_css_selector("#leaders > div > div:nth-child(2)"):
-        for child in parent.find_elements_by_tag_name("h2"):
-            print child.text
-# Get leaders title
-def getBetterCloudTitle():
-    parent = driver.find_elements_by_css_selector("#leaders > div:nth-child(1) > div:nth-child(2)")[0]
-    index = 0
-    for child in parent.find_elements_by_tag_name("h5"):
-        leaders[index]['title'] = child.text
-        index += 1
+        # Class method to return the image url of leader at given location
+        def getBetterCloudLeaderImage(self):
+            for child in self.parent.find_elements_by_tag_name("img"):
+                the_image = child.get_attribute("src")
+                if "icon" not in the_image:
+                    return the_image
 
-# def getBetterCloudNameCount():
-#     parent = driver.find_elements_by_css_selector("#leaders > div")[0]
-#     for child in parent.find_elements_by_tag_name("div"):
-#             for name in leaders:
-#                 leader_name_count = 0
-#                 index = 0
-#                 leader_first_name = name['firstname']
-#                 leader_last_name = name ['lastname']
-#                 print "This is the current leader %s" % leader_first_name
-#                 for grandchild in child.find_elements_by_tag_name("p"):
-#                     string = grandchild.text.upper()
-#                     the_list = string.split()
-#                     firstname_count = the_list.count(name['firstname'])
-#                     print the_list
-#                     lastname_count = the_list.count(name['lastname'])
-#                     leader_name_count = firstname_count - lastname_count
-#                 leaders[index]['name_count'] = leader_name_count
-#                 index += 1
-#                 leader_name_count = 0
+        # Class method to return the LinkedIn url of leader at given location
+        def getBetterCloudLinkedIn(self):
+            for child in self.parent.find_elements_by_xpath("./h2/a"):
+                theLink = child.get_attribute("href")
+                lastLink = str(theLink)
+                return lastLink
+
+        # Class method to return the name count of leader at given location
+        def getBetterCloudNameCount(self, name):
+            name = name.split()
+            firstname = name[0]
+            lastname = name[1]
+            leader_name_count = 0
+            for child in self.parent.find_elements_by_tag_name("p"):
+                string = child.text.upper()
+                string_array = string.split()
+                firstname_count = string_array.count(firstname)
+                lastname_count = string_array.count(lastname)
+                leader_child_name_count = firstname_count - lastname_count
+                leader_name_count += leader_child_name_count
+            return leader_name_count
+
+        # Class method that calls the other methods and return a dictionary for leader at given location
+        def buildLeaderDictionary(self):
+            name = self.getBetterCloudName()
+            title = self.getBetterCloudTitle()
+            image = self.getBetterCloudLeaderImage()
+            Linkedin = self.getBetterCloudLinkedIn()
+            count = self.getBetterCloudNameCount(name)
+            split_name = name.split()
+            firstname = split_name[0]
+            lastname = split_name[1]
+            new_dict = {
+            'firstname': firstname,
+            'lastname': lastname,
+            'title': title,
+            'image_url': image,
+            'linkedin': Linkedin,
+            'name_count': count
+            }
+            return new_dict
 
 
-def getBetterCloudNameCount():
-    div_index = 1
-    selector = "#leaders > div > div:nth-child(2) > div:nth-child(%d)" % div_index
-    parent = driver.find_elements_by_css_selector(selector)[0]
-    index = 0
-    for name in leaders:
-        leader_name_count = 0
-        leader_first_name = name['firstname']
-        leader_last_name = name ['lastname']
-        for child in parent.find_elements_by_tag_name("p"):
-            string = child.text.upper()
-            the_list = string.split()
-            firstname_count = the_list.count(name['firstname'])
-            print the_list
-            lastname_count = the_list.count(name['lastname'])
-            leader_name_count = firstname_count - lastname_count
-        leaders[index]['name_count'] = leader_name_count
-        leader_name_count = 0
-        index += 1
-    div_index += 2
-# morgan@notion
-getBetterCloudList()
-getBetterCloudLeaderImage()
-getBetterCloudTitle()
-getBetterCloudNameCount()
-for leader in leaders:
-    print leader
-    print leader['firstname']
-    print leader['lastname']
-    # print leader['linkedin']
-    # print leader['image_url']
-    # print leader['title']
-    # print leader['name_count']
-
-
-driver.quit()
+    leader_location = ["//*[@id='leaders']/div/div[2]/div[1]","//*[@id='leaders']/div/div[2]/div[2]","//*[@id='leaders']/div/div[2]/div[3]","//*[@id='leaders']/div/div[2]/div[4]","//*[@id='leaders']/div/div[2]/div[5]","//*[@id='leaders']/div/div[2]/div[6]","//*[@id='leaders']/div/div[2]/div[7]"]
+    leaders = []
+    for leader in leader_location:
+        the_leader = Leader(leader).buildLeaderDictionary()
+        leaders.append(the_leader)
+        print the_leader
+    driver.quit()
