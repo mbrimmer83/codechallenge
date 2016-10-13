@@ -5,6 +5,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+# Email and pasword are required in order to log into LinkedIn and retrieve data that is only visable to members logged into an account
+print "Input your email address useda to log into LinkedIn"
+email = raw_input("> ")
+print "Input your password used for LinkedIn"
+password = raw_input("> ")
 # I was working inside a python virtual env during this project
 # Create a new instance of the Firefox driver. I spent a good deal of time trouble shooting Firefox driver problems and was finally able to make it work by using an older version of FireFox(46.0.1).
 driver = webdriver.Firefox()
@@ -98,10 +104,10 @@ finally:
                 finally:
                     email_input = driver.find_element_by_name("session_key")
                     # Input linkedin email address to test this.
-                    email_input.send_keys('email)
+                    email_input.send_keys(email)
                     password_input = driver.find_element_by_name("session_password")
                     # Input linkedin pasword to test this.
-                    password_input.send_keys('password')
+                    password_input.send_keys(password)
                     submit = driver.find_element_by_name('signin')
                     submit.click()
             try:
