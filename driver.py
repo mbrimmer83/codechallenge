@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Email and pasword are required in order to log into LinkedIn and retrieve data that is only visable to members logged into an account
-print "Input your email address useda to log into LinkedIn"
+print "Input your email address used to log into LinkedIn"
 email = raw_input("> ")
 print "Input your password used for LinkedIn"
 password = raw_input("> ")
