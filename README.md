@@ -8,11 +8,7 @@ personal profile site and scrape more information. That data was then written to
 - Selenium<br>
 - Firefox<br>
 - Python<br>
-<br>
-## Logic
-My thought process was to give the location of each leader and then get the information for each one. I wanted to be as general
-as possible when gettin information after giving the intial location of each leader. I wanted to click each leaders profile link per the
-instuctions and pull information from there prifile. 
+<br> 
 ## Problems and Challenges
 1) Intitially Firefox would not run with Selenium and after a little research I fixed the problem by reverting to an older version
 of Firefox that Selenium drivers were updated to interact with.<br>
