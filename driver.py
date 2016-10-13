@@ -1,3 +1,4 @@
+import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -79,7 +80,17 @@ finally:
                     link = child
             # I struggled to get the link to click and the problem appeared to be with the image covering the link. Not 100%, but this was a workable solution to the problem.
             driver.execute_script("arguments[0].click();", link)
-            for element in driver.find_elements_by_css_selector("span.locaity"):
+            for handle in driver.window_handles:
+                driver.switch_to.window(handle)
+            try:
+                element = WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "locality")))
+            finally:
+                for location in driver.find_elements_by_css_selector("span.locality"):
+                    print element.text
+                    local = element.text
+                driver.switch_to.window(driver.window_handles[0])
+                return local
         # Class method that calls the other methods and return a dictionary for leader at given location
         def buildLeaderDictionary(self):
             name = self.getBetterCloudName()
@@ -97,7 +108,8 @@ finally:
             'title': title,
             'image_url': image,
             'linkedin': Linkedin,
-            'name_count': count
+            'name_count': count,
+            'location': linked_in_info
             }
             return new_dict
 
